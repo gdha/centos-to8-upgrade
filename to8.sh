@@ -85,6 +85,10 @@ info "starting to make a copy of /${CONFIG_DIRS} into ${STAGING_DIR}"
 rsync -avu /${CONFIG_DIRS} ${STAGING_DIR} 2>&1 | tee -a $STAGING_DIR/to8.log
 info "finished making a copy of /${CONFIG_DIRS} into ${STAGING_DIR}"
 
+info "Remove epel 7 repo (if present)"
+# yum-config-manager --disable epel-release
+rpm -q epel-release >/dev/null 2>&1 && rpm -e epel-release
+
 info "setting up CentOS 8 repository in ${STAGING_DIR}"
 mkdir -p $STAGING_DIR/etc/yum.repos.d $STAGING_DIR/etc/pki/rpm-gpg $STAGING_DIR/etc/yum/vars
 
@@ -132,6 +136,36 @@ yy+mHmSv
 -----END PGP PUBLIC KEY BLOCK-----
 EOF
 
+cat >/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8 <<EOF
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQINBFz3zvsBEADJOIIWllGudxnpvJnkxQz2CtoWI7godVnoclrdl83kVjqSQp+2
+dgxuG5mUiADUfYHaRQzxKw8efuQnwxzU9kZ70ngCxtmbQWGmUmfSThiapOz00018
++eo5MFabd2vdiGo1y+51m2sRDpN8qdCaqXko65cyMuLXrojJHIuvRA/x7iqOrRfy
+a8x3OxC4PEgl5pgDnP8pVK0lLYncDEQCN76D9ubhZQWhISF/zJI+e806V71hzfyL
+/Mt3mQm/li+lRKU25Usk9dWaf4NH/wZHMIPAkVJ4uD4H/uS49wqWnyiTYGT7hUbi
+ecF7crhLCmlRzvJR8mkRP6/4T/F3tNDPWZeDNEDVFUkTFHNU6/h2+O398MNY/fOh
+yKaNK3nnE0g6QJ1dOH31lXHARlpFOtWt3VmZU0JnWLeYdvap4Eff9qTWZJhI7Cq0
+Wm8DgLUpXgNlkmquvE7P2W5EAr2E5AqKQoDbfw/GiWdRvHWKeNGMRLnGI3QuoX3U
+pAlXD7v13VdZxNydvpeypbf/AfRyrHRKhkUj3cU1pYkM3DNZE77C5JUe6/0nxbt4
+ETUZBTgLgYJGP8c7PbkVnO6I/KgL1jw+7MW6Az8Ox+RXZLyGMVmbW/TMc8haJfKL
+MoUo3TVk8nPiUhoOC0/kI7j9ilFrBxBU5dUtF4ITAWc8xnG6jJs/IsvRpQARAQAB
+tChGZWRvcmEgRVBFTCAoOCkgPGVwZWxAZmVkb3JhcHJvamVjdC5vcmc+iQI4BBMB
+AgAiBQJc9877AhsPBgsJCAcDAgYVCAIJCgsEFgIDAQIeAQIXgAAKCRAh6kWrL4bW
+oWagD/4xnLWws34GByVDQkjprk0fX7Iyhpm/U7BsIHKspHLL+Y46vAAGY/9vMvdE
+0fcr9Ek2Zp7zE1RWmSCzzzUgTG6BFoTG1H4Fho/7Z8BXK/jybowXSZfqXnTOfhSF
+alwDdwlSJvfYNV9MbyvbxN8qZRU1z7PEWZrIzFDDToFRk0R71zHpnPTNIJ5/YXTw
+NqU9OxII8hMQj4ufF11040AJQZ7br3rzerlyBOB+Jd1zSPVrAPpeMyJppWFHSDAI
+WK6x+am13VIInXtqB/Cz4GBHLFK5d2/IYspVw47Solj8jiFEtnAq6+1Aq5WH3iB4
+bE2e6z00DSF93frwOyWN7WmPIoc2QsNRJhgfJC+isGQAwwq8xAbHEBeuyMG8GZjz
+xohg0H4bOSEujVLTjH1xbAG4DnhWO/1VXLX+LXELycO8ZQTcjj/4AQKuo4wvMPrv
+9A169oETG+VwQlNd74VBPGCvhnzwGXNbTK/KH1+WRH0YSb+41flB3NKhMSU6dGI0
+SGtIxDSHhVVNmx2/6XiT9U/znrZsG5Kw8nIbbFz+9MGUUWgJMsd1Zl9R8gz7V9fp
+n7L7y5LhJ8HOCMsY/Z7/7HUs+t/A1MI4g7Q5g5UuSZdgi0zxukiWuCkLeAiAP4y7
+zKK4OjJ644NDcWCHa36znwVmkz3ixL8Q0auR15Oqq2BjR/fyog==
+=84m8
+-----END PGP PUBLIC KEY BLOCK-----
+EOF
 cat >$STAGING_DIR/etc/yum.repos.d/CentOS-Base.repo <<EOF
 [BaseOS]
 name=CentOS-8 - Base
@@ -158,12 +192,19 @@ gpgcheck=1
 enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 EOF
+cat >$STAGING_DIR/etc/yum.repos.d/epel.repo <<EOF
+[epel]
+name=Extra Packages for Enterprise Linux \$releasever - \$basearch
+#baseurl=https://download.fedoraproject.org/pub/epel/\$releasever/Everything/\$basearch
+metalink=https://mirrors.fedoraproject.org/metalink?repo=epel-\$releasever&arch=\$basearch&infra=\$infra&content=\$contentdir
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-8
+EOF
 
-info "Disable epel repo"
-yum-config-manager --disable epel
 
 info "starting CentOS-8 setup in ${STAGING_DIR}"
-yum install -y --installroot=$STAGING_DIR hostname yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
+yum install -y --installroot=$STAGING_DIR hostname dnf yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
 info "finished CentOS-8 setup in ${STAGING_DIR}"
 
 info "beginning to sync ${STAGING_DIR} to /"
