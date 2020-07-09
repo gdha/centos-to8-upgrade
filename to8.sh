@@ -262,3 +262,5 @@ info "CentOS-8 has been setup, please reboot to load the CentOS-8 kernel and mod
 
 info "If you would like to move to CentOS-8-Stream, please install the centos-release-stream package from CentOS Extras by running:"
 info 'yum install --enablerepo="extras" centos-release-stream'
+echo
+info 'Install dnf if it is not yet done - yum -y install dnf'
