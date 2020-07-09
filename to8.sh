@@ -15,6 +15,11 @@ function info() {
   echo "[$(date)] [info] $1"
 }
 
+function error() {
+  echo "[$(date)] [error] $1"
+  exit 1
+}
+
 function preflight_check() {
   echo -n "[preflight] checking $1"
   if [[ $2 -eq 0 ]]; then
@@ -33,6 +38,9 @@ preflight_check "if you are running this as root" $? "you need to run me as root
 
 test "$(grep VERSION_ID /etc/os-release | awk -F'=' '{ print $2 }')" == '"7"'
 preflight_check "if you are running this on a RHEL-like 7 system" $? "you need to run me from a RHEL-like 7 OS"
+
+# check if we have rsync executable
+type -p rsync >/dev/null || error "Missing rsync executable - please install it first: yum -f install rsync"
 
 if [[ ! -d $STAGING_DIR ]]; then
   mkdir -p $STAGING_DIR
@@ -151,8 +159,11 @@ enabled=1
 gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
 EOF
 
+info "Disable epel repo"
+yum-config-manager --disable epel
+
 info "starting CentOS-8 setup in ${STAGING_DIR}"
-yum install -y --installroot=$STAGING_DIR hostname yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
+yum install -y --installroot=$STAGING_DIR hostname dnf yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
 info "finished CentOS-8 setup in ${STAGING_DIR}"
 
 info "beginning to sync ${STAGING_DIR} to /"
@@ -190,6 +201,9 @@ systemctl daemon-reload
 echo "Packages which could not be migrated into CentOS 8 using the base repositories:"
 grep -e 'No package .* available' $STAGING_DIR/to8.log | awk '{ print $3 }' | tr $'\n' ' '
 
+echo
+info "Install the latest epel-release 8 now"
+yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 echo
 
 info "CentOS-8 has been setup, please reboot to load the CentOS-8 kernel and modules."
