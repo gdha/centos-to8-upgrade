@@ -163,7 +163,7 @@ info "Disable epel repo"
 yum-config-manager --disable epel
 
 info "starting CentOS-8 setup in ${STAGING_DIR}"
-yum install -y --installroot=$STAGING_DIR hostname dnf yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
+yum install -y --installroot=$STAGING_DIR hostname yum centos-release glibc-langpack-en $(rpmquery -a --queryformat '%{NAME} ') 2>&1 | tee -a $STAGING_DIR/to8.log
 info "finished CentOS-8 setup in ${STAGING_DIR}"
 
 info "beginning to sync ${STAGING_DIR} to /"
@@ -206,6 +206,17 @@ info "Install the latest epel-release 8 now"
 yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 echo
 
+info "Get rid of the CentOS 7 repo and replace then with the CentOS 8 ones (in /etc/yum.repos.d/)."
+if [[ -d /etc/yum.repos.d ]] ; then
+  cd /etc/yum.repos.d
+  for i in $(ls *.rpmnew 2>/dev/null)
+  do
+    info "Move $(echo ${i%.*}) to $i" 
+    mv -f $i $(echo ${i%.*})
+  done
+  cd -
+fi
+  
 info "CentOS-8 has been setup, please reboot to load the CentOS-8 kernel and modules."
 
 info "If you would like to move to CentOS-8-Stream, please install the centos-release-stream package from CentOS Extras by running:"
